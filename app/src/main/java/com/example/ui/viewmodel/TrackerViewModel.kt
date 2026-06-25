@@ -16,6 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+enum class AppLanguage {
+    ENGLISH,
+    GEORGIAN
+}
+
 enum class MetricUnit(val symbol: String) {
     METRIC("Metric (kg, cm)"),
     IMPERIAL("Imperial (lbs, in)")
@@ -105,6 +110,20 @@ class TrackerViewModel(application: Application) : AndroidViewModel(application)
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+    }
+
+    private val _appLanguage = MutableStateFlow(
+        try {
+            AppLanguage.valueOf(prefs.getString("app_language", AppLanguage.ENGLISH.name) ?: AppLanguage.ENGLISH.name)
+        } catch (e: Exception) {
+            AppLanguage.ENGLISH
+        }
+    )
+    val appLanguage: StateFlow<AppLanguage> = _appLanguage.asStateFlow()
+
+    fun setLanguage(language: AppLanguage) {
+        _appLanguage.value = language
+        prefs.edit().putString("app_language", language.name).apply()
     }
 
     private val _unitPreference = MutableStateFlow(MetricUnit.METRIC)

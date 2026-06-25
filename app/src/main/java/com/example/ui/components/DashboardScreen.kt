@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
@@ -70,6 +71,10 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.surfaceColorAtElevation
+import com.example.ui.viewmodel.AppLanguage
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -118,28 +123,118 @@ fun DashboardScreen(
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
+    val currentLanguage by viewModel.appLanguage.collectAsState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Productivity Tracker",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        // English Flag Button (GB flag emoji)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (currentLanguage == AppLanguage.ENGLISH)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        Color.Transparent
+                                )
+                                .border(
+                                    width = if (currentLanguage == AppLanguage.ENGLISH) 2.dp else 1.dp,
+                                    color = if (currentLanguage == AppLanguage.ENGLISH)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.outlineVariant,
+                                    shape = CircleShape
+                                )
+                                .clickable { viewModel.setLanguage(AppLanguage.ENGLISH) }
+                                .testTag("lang_en"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "\uD83C\uDDEC\uD83C\uDDE7", // 🇬🇧
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        // Georgian Flag Button (GE flag emoji)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (currentLanguage == AppLanguage.GEORGIAN)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        Color.Transparent
+                                )
+                                .border(
+                                    width = if (currentLanguage == AppLanguage.GEORGIAN) 2.dp else 1.dp,
+                                    color = if (currentLanguage == AppLanguage.GEORGIAN)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.outlineVariant,
+                                    shape = CircleShape
+                                )
+                                .clickable { viewModel.setLanguage(AppLanguage.GEORGIAN) }
+                                .testTag("lang_ka"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "\uD83C\uDDEC\uD83C\uDDEA", // 🇬🇪
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
+                )
+            )
+        },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
                     selected = activeTab == 0,
                     onClick = { activeTab = 0 },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Physique tracking") },
-                    label = { Text("Physique") },
-                    modifier = Modifier.testTag("tab_physique")
+                    icon = { Icon(Icons.Default.Home, contentDescription = Localization.get("tab_productivity", currentLanguage)) },
+                    label = { Text(Localization.get("tab_productivity", currentLanguage)) },
+                    modifier = Modifier.testTag("tab_productivity")
                 )
                 NavigationBarItem(
                     selected = activeTab == 1,
                     onClick = { activeTab = 1 },
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Smoking tracking") },
-                    label = { Text("Smoking") },
+                    icon = { Icon(Icons.Default.Person, contentDescription = Localization.get("tab_fitness", currentLanguage)) },
+                    label = { Text(Localization.get("tab_fitness", currentLanguage)) },
+                    modifier = Modifier.testTag("tab_fitness")
+                )
+                NavigationBarItem(
+                    selected = activeTab == 2,
+                    onClick = { activeTab = 2 },
+                    icon = { Icon(Icons.Default.Star, contentDescription = Localization.get("tab_smoking", currentLanguage)) },
+                    label = { Text(Localization.get("tab_smoking", currentLanguage)) },
                     modifier = Modifier.testTag("tab_smoking")
                 )
             }
         },
         floatingActionButton = {
-            if (activeTab == 0) {
+            if (activeTab == 1) {
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -160,15 +255,24 @@ fun DashboardScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding())
+                .padding(innerPadding)
         ) {
-            if (activeTab == 0) {
-                if (measurements.isEmpty()) {
+            when (activeTab) {
+                0 -> {
+                    MainDashboardScreen(
+                        viewModel = viewModel,
+                        onNavigateToTab = { activeTab = it },
+                        modifier = Modifier
+                    )
+                }
+                1 -> {
+                    if (measurements.isEmpty()) {
                     // Beautiful Empty Onboarding Screen
                     EmptyOnboarding(
+                        viewModel = viewModel,
                         onPopulateDemo = { viewModel.populateDemoData() },
                         onAddFirst = { showAddDialog = true },
-                        modifier = Modifier.padding(top = statusBarPadding)
+                        modifier = Modifier
                     )
                 } else {
                 val latest = measurements.first()
@@ -182,9 +286,10 @@ fun DashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item {
-                        Spacer(modifier = Modifier.height(statusBarPadding + 16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         // Header Area
                         HeaderSection(
+                            viewModel = viewModel,
                             unitSystem = unitSystem,
                             onToggleUnit = { viewModel.toggleUnit() }
                         )
@@ -324,18 +429,21 @@ fun DashboardScreen(
                     }
                 }
             }
-            } else {
+            }
+            else -> {
                 CigaretteTrackerScreen(
                     viewModel = viewModel,
-                    modifier = Modifier.padding(top = statusBarPadding)
+                    modifier = Modifier
                 )
             }
         }
+    }
 
         // Modal Bottom Sheet for adding logs
         if (showAddDialog) {
             val latestEntry = if (measurements.isNotEmpty()) measurements.first() else null
             AddLogBottomSheet(
+                viewModel = viewModel,
                 latestEntry = latestEntry,
                 unitSystem = unitSystem,
                 sheetState = sheetState,
@@ -355,10 +463,13 @@ fun DashboardScreen(
 
 @Composable
 fun EmptyOnboarding(
+    viewModel: TrackerViewModel,
     onPopulateDemo: () -> Unit,
     onAddFirst: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage by viewModel.appLanguage.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -391,7 +502,7 @@ fun EmptyOnboarding(
         Spacer(modifier = Modifier.height(28.dp))
 
         Text(
-            text = "Track Physique Changes",
+            text = Localization.get("track_fitness_changes", currentLanguage),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center,
@@ -401,7 +512,7 @@ fun EmptyOnboarding(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Keep track of weight and key body measurements like chest, waist, hips, biceps, thighs, forearms, and calves. View differences over time with high-precision metrics and visual trends.",
+            text = Localization.get("fitness_description", currentLanguage),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -421,7 +532,7 @@ fun EmptyOnboarding(
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Your First Log", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(Localization.get("add_first_log", currentLanguage), fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -433,16 +544,18 @@ fun EmptyOnboarding(
         ) {
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Explore with Demo Data", fontWeight = FontWeight.SemiBold)
+            Text(Localization.get("explore_with_demo", currentLanguage), fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
 fun HeaderSection(
+    viewModel: TrackerViewModel,
     unitSystem: MetricUnit,
     onToggleUnit: () -> Unit
 ) {
+    val currentLanguage by viewModel.appLanguage.collectAsState()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -450,13 +563,13 @@ fun HeaderSection(
     ) {
         Column {
             Text(
-                text = "Productivity Tracker",
+                text = Localization.get("fitness_tracker_title", currentLanguage),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Monitor physique composition & trends",
+                text = Localization.get("fitness_tracker_subtitle", currentLanguage),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -955,12 +1068,14 @@ data class WizardStep(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddLogBottomSheet(
+    viewModel: TrackerViewModel,
     latestEntry: BodyMeasurement?,
     unitSystem: MetricUnit,
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onSave: (BodyMeasurement) -> Unit
 ) {
+    val currentLanguage by viewModel.appLanguage.collectAsState()
     val lengthUnit = if (unitSystem == MetricUnit.METRIC) "cm" else "in"
     val weightUnit = if (unitSystem == MetricUnit.METRIC) "kg" else "lbs"
 
@@ -1113,13 +1228,13 @@ fun AddLogBottomSheet(
             ) {
                 Column {
                     Text(
-                        text = "New Log Entry",
+                        text = Localization.get("new_log_entry", currentLanguage),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Step ${currentStepIndex + 1} of $totalSteps",
+                        text = "${Localization.get("step", currentLanguage)} ${currentStepIndex + 1} ${Localization.get("of", currentLanguage)} $totalSteps",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
@@ -1188,8 +1303,23 @@ fun AddLogBottomSheet(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                             }
+                            val localizedStepTitle = when(step.title) {
+                                "Weight" -> Localization.get("weight", currentLanguage)
+                                "Waist" -> Localization.get("waist", currentLanguage)
+                                "Chest" -> Localization.get("chest", currentLanguage)
+                                "Hips" -> Localization.get("hips", currentLanguage)
+                                "Left Bicep" -> Localization.get("left_bicep", currentLanguage)
+                                "Right Bicep" -> Localization.get("right_bicep", currentLanguage)
+                                "Left Forearm" -> Localization.get("left_forearm", currentLanguage)
+                                "Right Forearm" -> Localization.get("right_forearm", currentLanguage)
+                                "Left Thigh" -> Localization.get("left_thigh", currentLanguage)
+                                "Right Thigh" -> Localization.get("right_thigh", currentLanguage)
+                                "Left Calf" -> Localization.get("left_calf", currentLanguage)
+                                "Right Calf" -> Localization.get("right_calf", currentLanguage)
+                                else -> step.title
+                            }
                             Text(
-                                text = step.title,
+                                text = localizedStepTitle,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isActive) {
@@ -1222,7 +1352,7 @@ fun AddLogBottomSheet(
                             }
                     ) {
                         Text(
-                            text = "Summary & Save",
+                            text = Localization.get("summary_and_save", currentLanguage),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                             color = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1249,15 +1379,45 @@ fun AddLogBottomSheet(
                     Column(
                         modifier = Modifier.padding(20.dp)
                     ) {
+                        val stepTitle = when(currentStep.title) {
+                            "Weight" -> Localization.get("weight", currentLanguage)
+                            "Waist" -> Localization.get("waist", currentLanguage)
+                            "Chest" -> Localization.get("chest", currentLanguage)
+                            "Hips" -> Localization.get("hips", currentLanguage)
+                            "Left Bicep" -> Localization.get("left_bicep", currentLanguage)
+                            "Right Bicep" -> Localization.get("right_bicep", currentLanguage)
+                            "Left Forearm" -> Localization.get("left_forearm", currentLanguage)
+                            "Right Forearm" -> Localization.get("right_forearm", currentLanguage)
+                            "Left Thigh" -> Localization.get("left_thigh", currentLanguage)
+                            "Right Thigh" -> Localization.get("right_thigh", currentLanguage)
+                            "Left Calf" -> Localization.get("left_calf", currentLanguage)
+                            "Right Calf" -> Localization.get("right_calf", currentLanguage)
+                            else -> currentStep.title
+                        }
+                        val stepDesc = when(currentStep.title) {
+                            "Weight" -> Localization.get("desc_weight", currentLanguage)
+                            "Waist" -> Localization.get("desc_waist", currentLanguage)
+                            "Chest" -> Localization.get("desc_chest", currentLanguage)
+                            "Hips" -> Localization.get("desc_hips", currentLanguage)
+                            "Left Bicep" -> Localization.get("desc_left_bicep", currentLanguage)
+                            "Right Bicep" -> Localization.get("desc_right_bicep", currentLanguage)
+                            "Left Forearm" -> Localization.get("desc_left_forearm", currentLanguage)
+                            "Right Forearm" -> Localization.get("desc_right_forearm", currentLanguage)
+                            "Left Thigh" -> Localization.get("desc_left_thigh", currentLanguage)
+                            "Right Thigh" -> Localization.get("desc_right_thigh", currentLanguage)
+                            "Left Calf" -> Localization.get("desc_left_calf", currentLanguage)
+                            "Right Calf" -> Localization.get("desc_right_calf", currentLanguage)
+                            else -> currentStep.description
+                        }
                         Text(
-                            text = currentStep.title,
+                            text = stepTitle,
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = currentStep.description,
+                            text = stepDesc,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

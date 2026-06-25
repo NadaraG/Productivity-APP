@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.CigaretteLog
 import com.example.ui.viewmodel.TrackerViewModel
+import com.example.ui.viewmodel.AppLanguage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -43,33 +44,40 @@ fun CigaretteTrackerScreen(
     val cigarettesPerPack by viewModel.cigarettesPerPack.collectAsState()
     val dailyTarget by viewModel.dailyTarget.collectAsState()
     val monthlyTarget by viewModel.monthlyTarget.collectAsState()
+    val currentLanguage by viewModel.appLanguage.collectAsState()
 
     var showCustomLogDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
 
-    // Calculations
-    val now = System.currentTimeMillis()
-    val oneDayMs = 24 * 60 * 60 * 1000L
-
+    // Date filters
     val calendar = java.util.Calendar.getInstance()
+    
+    // Today
     calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
     calendar.set(java.util.Calendar.MINUTE, 0)
     calendar.set(java.util.Calendar.SECOND, 0)
     calendar.set(java.util.Calendar.MILLISECOND, 0)
     val startOfToday = calendar.timeInMillis
+    
+    // Weekly (7 days ago)
+    calendar.add(java.util.Calendar.DAY_OF_YEAR, -7)
+    val startOfWeekly = calendar.timeInMillis
+    
+    // Monthly (30 days ago)
+    calendar.setTimeInMillis(System.currentTimeMillis())
+    calendar.add(java.util.Calendar.DAY_OF_YEAR, -30)
+    val startOfMonthly = calendar.timeInMillis
 
-    // Filter logs
+    // Counts
     val todayLogs = cigaretteLogs.filter { it.timestamp >= startOfToday }
     val todayCount = todayLogs.sumOf { it.quantity }
 
-    val startOfWeek = now - 7 * oneDayMs
-    val weeklyLogs = cigaretteLogs.filter { it.timestamp >= startOfWeek }
+    val weeklyLogs = cigaretteLogs.filter { it.timestamp >= startOfWeekly }
     val weeklyCount = weeklyLogs.sumOf { it.quantity }
 
-    val startOfMonth = now - 30 * oneDayMs
-    val monthlyLogs = cigaretteLogs.filter { it.timestamp >= startOfMonth }
+    val monthlyLogs = cigaretteLogs.filter { it.timestamp >= startOfMonthly }
     val monthlyCount = monthlyLogs.sumOf { it.quantity }
 
     // Money Calculations
@@ -97,13 +105,13 @@ fun CigaretteTrackerScreen(
             ) {
                 Column {
                     Text(
-                        text = "Smoking Tracker",
+                        text = Localization.get("smoking_tracker_title", currentLanguage),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Track smoking habits and money saved",
+                        text = Localization.get("smoking_tracker_subtitle", currentLanguage),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -139,7 +147,7 @@ fun CigaretteTrackerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "TODAY'S COUNT",
+                        text = Localization.get("cigarettes_smoked_today", currentLanguage).uppercase(Locale.getDefault()),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         fontWeight = FontWeight.Bold
@@ -152,7 +160,7 @@ fun CigaretteTrackerScreen(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "Cigarettes Smoked",
+                        text = Localization.get("cigarettes_smoked", currentLanguage),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
                     )
@@ -175,7 +183,7 @@ fun CigaretteTrackerScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = "Today's Cost: ₾${String.format(Locale.US, "%.2f", todaySpent)}",
+                                text = "${Localization.get("today_cost", currentLanguage)}: ₾${String.format(Locale.US, "%.2f", todaySpent)}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -203,7 +211,10 @@ fun CigaretteTrackerScreen(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Log +1 Cigarette", fontWeight = FontWeight.Bold)
+                            Text(
+                                text = Localization.get("smoke_a_cigarette", currentLanguage),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
 
                         OutlinedButton(
@@ -217,7 +228,10 @@ fun CigaretteTrackerScreen(
                                 .weight(1f)
                                 .height(52.dp)
                         ) {
-                            Text("Custom", fontWeight = FontWeight.Bold)
+                            Text(
+                                text = Localization.get("record_custom_quantity", currentLanguage),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -227,7 +241,7 @@ fun CigaretteTrackerScreen(
         // Targets comparison section
         item {
             Text(
-                text = "Targets Tracking",
+                text = Localization.get("smoking_parameters_and_targets", currentLanguage),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -258,10 +272,11 @@ fun CigaretteTrackerScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Daily Target",
+                            text = Localization.get("daily_target_limit", currentLanguage),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = if (isDailyTargetMet) Color(0xFF2E7D32) else Color(0xFFC62828)
+                            color = if (isDailyTargetMet) Color(0xFF2E7D32) else Color(0xFFC62828),
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
@@ -271,7 +286,7 @@ fun CigaretteTrackerScreen(
                             color = if (isDailyTargetMet) Color(0xFF1B5E20) else Color(0xFFB71C1C)
                         )
                         Text(
-                            text = "cigarettes limit",
+                            text = Localization.get("cigarettes", currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isDailyTargetMet) Color(0xFF4CAF50) else Color(0xFFE53935)
                         )
@@ -281,7 +296,11 @@ fun CigaretteTrackerScreen(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = if (isDailyTargetMet) "Target Met" else "Target Exceeded",
+                                text = if (isDailyTargetMet) {
+                                    Localization.get("target_met", currentLanguage)
+                                } else {
+                                    Localization.get("target_exceeded", currentLanguage)
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isDailyTargetMet) Color(0xFF1B5E20) else Color(0xFFB71C1C),
@@ -310,10 +329,11 @@ fun CigaretteTrackerScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Monthly Target",
+                            text = Localization.get("monthly_target_limit", currentLanguage),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = if (isMonthlyTargetMet) Color(0xFF2E7D32) else Color(0xFFC62828)
+                            color = if (isMonthlyTargetMet) Color(0xFF2E7D32) else Color(0xFFC62828),
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
@@ -323,7 +343,7 @@ fun CigaretteTrackerScreen(
                             color = if (isMonthlyTargetMet) Color(0xFF1B5E20) else Color(0xFFB71C1C)
                         )
                         Text(
-                            text = "cigarettes limit",
+                            text = Localization.get("cigarettes", currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isMonthlyTargetMet) Color(0xFF4CAF50) else Color(0xFFE53935)
                         )
@@ -333,7 +353,11 @@ fun CigaretteTrackerScreen(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = if (isMonthlyTargetMet) "Target Met" else "Target Exceeded",
+                                text = if (isMonthlyTargetMet) {
+                                    Localization.get("target_met", currentLanguage)
+                                } else {
+                                    Localization.get("target_exceeded", currentLanguage)
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isMonthlyTargetMet) Color(0xFF1B5E20) else Color(0xFFB71C1C),
@@ -348,7 +372,7 @@ fun CigaretteTrackerScreen(
         // Habit stats
         item {
             Text(
-                text = "Habit & Financial Statistics",
+                text = Localization.get("parameters", currentLanguage),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -368,64 +392,25 @@ fun CigaretteTrackerScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     StatRow(
-                        label = "Today",
-                        count = "$todayCount cigarettes",
-                        money = "₾${String.format(Locale.US, "%.2f", todaySpent)}"
+                        label = Localization.get("today", currentLanguage),
+                        count = "$todayCount ${Localization.get("cigarettes", currentLanguage)}",
+                        money = "₾${String.format(Locale.US, "%.2f", todaySpent)}",
+                        lang = currentLanguage
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     StatRow(
-                        label = "Weekly (7 days)",
-                        count = "$weeklyCount cigarettes",
-                        money = "₾${String.format(Locale.US, "%.2f", weeklySpent)}"
+                        label = Localization.get("weekly", currentLanguage),
+                        count = "$weeklyCount ${Localization.get("cigarettes", currentLanguage)}",
+                        money = "₾${String.format(Locale.US, "%.2f", weeklySpent)}",
+                        lang = currentLanguage
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     StatRow(
-                        label = "Monthly (30 days)",
-                        count = "$monthlyCount cigarettes",
-                        money = "₾${String.format(Locale.US, "%.2f", monthlySpent)}"
+                        label = Localization.get("monthly", currentLanguage),
+                        count = "$monthlyCount ${Localization.get("cigarettes", currentLanguage)}",
+                        money = "₾${String.format(Locale.US, "%.2f", monthlySpent)}",
+                        lang = currentLanguage
                     )
-                }
-            }
-        }
-
-        // Demo data action if empty
-        if (cigaretteLogs.isEmpty()) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "No logs found yet",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Populate past logs to see beautiful visual charts and spending metrics.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        TextButton(
-                            onClick = { viewModel.populateCigaretteDemoData() },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Explore with Demo Data", fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
             }
         }
@@ -438,7 +423,7 @@ fun CigaretteTrackerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Recent Logs History",
+                    text = Localization.get("history_of_smoking", currentLanguage),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -453,7 +438,11 @@ fun CigaretteTrackerScreen(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Clear All", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = Localization.get("clear_all", currentLanguage),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -468,7 +457,7 @@ fun CigaretteTrackerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Your logged cigarettes will show up here.",
+                        text = Localization.get("no_logs_recorded_today", currentLanguage),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -479,6 +468,7 @@ fun CigaretteTrackerScreen(
                 CigaretteLogItem(
                     log = log,
                     costPerCigarette = costPerCigarette,
+                    lang = currentLanguage,
                     onDelete = { viewModel.deleteCigaretteLog(log.id) }
                 )
             }
@@ -496,21 +486,24 @@ fun CigaretteTrackerScreen(
         AlertDialog(
             onDismissRequest = { showCustomLogDialog = false },
             title = {
-                Text("Log Custom Quantity", fontWeight = FontWeight.Bold)
+                Text(
+                    text = Localization.get("log_custom_quantity", currentLanguage),
+                    fontWeight = FontWeight.Bold
+                )
             },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Enter the number of cigarettes you smoked to add to today's log.",
+                        text = Localization.get("how_many_cigarettes_question", currentLanguage),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedTextField(
                         value = quantityInput,
                         onValueChange = { quantityInput = it },
-                        label = { Text("Quantity") },
+                        label = { Text(Localization.get("quantity", currentLanguage)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -527,12 +520,12 @@ fun CigaretteTrackerScreen(
                         showCustomLogDialog = false
                     }
                 ) {
-                    Text("Add Log")
+                    Text(Localization.get("save", currentLanguage))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomLogDialog = false }) {
-                    Text("Cancel")
+                    Text(Localization.get("dismiss", currentLanguage))
                 }
             }
         )
@@ -548,7 +541,10 @@ fun CigaretteTrackerScreen(
         AlertDialog(
             onDismissRequest = { showSettingsDialog = false },
             title = {
-                Text("Smoking Parameters & Targets", fontWeight = FontWeight.Bold)
+                Text(
+                    text = Localization.get("smoking_parameters_and_targets", currentLanguage),
+                    fontWeight = FontWeight.Bold
+                )
             },
             text = {
                 LazyColumn(
@@ -559,7 +555,7 @@ fun CigaretteTrackerScreen(
                         OutlinedTextField(
                             value = priceInput,
                             onValueChange = { priceInput = it },
-                            label = { Text("Price of a Pack (₾)") },
+                            label = { Text(Localization.get("price_of_pack", currentLanguage)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
@@ -569,7 +565,7 @@ fun CigaretteTrackerScreen(
                         OutlinedTextField(
                             value = countInPackInput,
                             onValueChange = { countInPackInput = it },
-                            label = { Text("Cigarettes in a Pack") },
+                            label = { Text(Localization.get("cigarettes_in_pack", currentLanguage)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
@@ -579,7 +575,7 @@ fun CigaretteTrackerScreen(
                         OutlinedTextField(
                             value = dailyTargetInput,
                             onValueChange = { dailyTargetInput = it },
-                            label = { Text("Daily Target Limit") },
+                            label = { Text(Localization.get("daily_target_limit", currentLanguage)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
@@ -589,7 +585,7 @@ fun CigaretteTrackerScreen(
                         OutlinedTextField(
                             value = monthlyTargetInput,
                             onValueChange = { monthlyTargetInput = it },
-                            label = { Text("Monthly Target Limit") },
+                            label = { Text(Localization.get("monthly_target_limit", currentLanguage)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
@@ -613,12 +609,12 @@ fun CigaretteTrackerScreen(
                         showSettingsDialog = false
                     }
                 ) {
-                    Text("Save Settings")
+                    Text(Localization.get("apply_settings", currentLanguage))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSettingsDialog = false }) {
-                    Text("Cancel")
+                    Text(Localization.get("cancel", currentLanguage))
                 }
             }
         )
@@ -629,7 +625,8 @@ fun CigaretteTrackerScreen(
 fun StatRow(
     label: String,
     count: String,
-    money: String
+    money: String,
+    lang: AppLanguage
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -655,7 +652,7 @@ fun StatRow(
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
-                text = "Spent: $money",
+                text = "${Localization.get("cost_label", lang)}: $money",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -669,6 +666,7 @@ fun StatRow(
 fun CigaretteLogItem(
     log: CigaretteLog,
     costPerCigarette: Float,
+    lang: AppLanguage,
     onDelete: () -> Unit
 ) {
     val formatter = remember { SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault()) }
@@ -701,7 +699,7 @@ fun CigaretteLogItem(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "${log.quantity} Cigarette" + if (log.quantity > 1) "s" else "",
+                        text = "${log.quantity} ${Localization.get("cigarettes", lang)}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -720,7 +718,7 @@ fun CigaretteLogItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Cost: ₾${String.format(Locale.US, "%.2f", estimatedCost)}",
+                    text = "${Localization.get("cost_label", lang)}: ₾${String.format(Locale.US, "%.2f", estimatedCost)}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error
