@@ -1,0 +1,6 @@
+{
+  "name": "Productivity Tracker",
+  "description": "A highly-polished physique, body measurement, and cigarette counter tracker to monitor body composition, health habits, and target spending.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
